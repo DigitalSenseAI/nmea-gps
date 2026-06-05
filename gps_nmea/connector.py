@@ -10,12 +10,14 @@ class GPS_connector():
     _latitude_sn = {"S": -1, "N": 1}
     _longitude_we = {"W": -1, "E": 1}
 
-    def __init__(self, src="/dev/ttyACM0", baudrate: int = 4800, message_type: str = "GGA", strategy="block"):
+    def __init__(self, src="/dev/ttyACM0", baudrate: int = 4800, message_type: str = "GGA", strategy: str = "block"):
         """ Initialization function
         Args:
             src (str): Location of the device in the filesystem
             baudrate (int): Baudrate for communication
             message_type (str): Type of message in the NMEA protocol to decode (only GGA and RMC sopported)
+            strategy (str): Strategy for reading data from the gps. 'block' will read the gps output until it finds one with the expected message type,
+            while 'yield' will return the output of first line read, being an empty dict when the message is not message_type.
         Return:
             None
         """

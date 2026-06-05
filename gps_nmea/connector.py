@@ -10,7 +10,7 @@ class GPS_connector():
     _latitude_sn = {"S": -1, "N": 1}
     _longitude_we = {"W": -1, "E": 1}
 
-    def __init__(self, src="/dev/ttyACM0", baudrate: int = 4800, message_type: str = "GGA"):
+    def __init__(self, src="/dev/ttyACM0", baudrate: int = 4800, message_type: str = "GGA", strategy="block"):
         """ Initialization function
         Args:
             src (str): Location of the device in the filesystem
@@ -23,6 +23,8 @@ class GPS_connector():
         integrity_function_mapping = {"GGA": self.check_gga_integrity, "RMC": self.check_rmc_integrity}
 
         self.gps = Serial(src, baudrate)
+        self.message_type = message_type
+        self.strategy = strategy
         self.decode_data = message_function_mapping[message_type]
         self.check_integrity = integrity_function_mapping[message_type]
 
@@ -34,6 +36,17 @@ class GPS_connector():
             (dict) : Dictionary with human readable information
         """
         data_line = self.gps.readline()
+        if self.strategy == "block":
+            while not data_line.startswith(f"$GP{self.message_type}".encode("utf8")):
+#                print("Received line does not start with the expected message type, reading next line")
+#                print(f"${self.message_type}".encode("utf8"))
+#                print(data_line)
+                data_line = self.gps.readline()
+        elif self.strategy == "yield":
+            pass
+        else:
+            raise ValueError("Invalid strategy for reading data from gps. Valid options are 'block' and 'yield'")
+
         data = self.decode_line(data_line)
         return data
 

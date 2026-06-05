@@ -1,7 +1,10 @@
 from serial import Serial
+from logging import getLogger
+
+logger = getLogger(__name__)
 
 
-class GPS_connector:
+class GPSConnector:
     """Class for connecting with the gps garmin 18x using NMEA protocol
     https://www.sparkfun.com/datasheets/GPS/NMEA%20Reference%20Manual-Rev2.1-Dec07.pdf
     """
@@ -52,9 +55,6 @@ class GPS_connector:
         data_line = self.gps.readline()
         if self.strategy == "block":
             while not data_line.startswith(f"$GP{self.message_type}".encode("utf8")):
-                #                print("Received line does not start with the expected message type, reading next line")
-                #                print(f"${self.message_type}".encode("utf8"))
-                #                print(data_line)
                 data_line = self.gps.readline()
         elif self.strategy == "yield":
             pass
@@ -66,7 +66,7 @@ class GPS_connector:
         data = self.decode_line(data_line)
         return data
 
-    def decode_line(self, line: str) -> dict:
+    def decode_line(self, line: bytes) -> dict:
         """Function for decoding a NMEA protocol line and decode it into a dictionary
         Args:
             line (str) : A line with information compliant with NMEA protocol
@@ -76,7 +76,7 @@ class GPS_connector:
         try:
             line = line.decode("utf8").strip("\n\r")
         except (UnicodeError, UnicodeDecodeError) as e:
-            print(f"Error decoding line from gps: {e}")
+            logger.warning(f"Error decoding line from gps: {e}")
             return {}
         line_data = line.split(",")
         if not self.check_integrity(line_data):
@@ -157,17 +157,17 @@ class GPS_connector:
         data_dict = {}
         if line_data[0] == "$GPGGA":
             data_dict["time"] = line_data[1]
-            data_dict["latitude"] = GPS_connector.get_latitude_degrees(
+            data_dict["latitude"] = GPSConnector.get_latitude_degrees(
                 line_data[2], line_data[3]
             )
-            data_dict["longitude"] = GPS_connector.get_longitude_degrees(
+            data_dict["longitude"] = GPSConnector.get_longitude_degrees(
                 line_data[4], line_data[5]
             )
             try:
-                data_dict["fix type"] = GPS_connector._fix_type[line_data[6]]
+                data_dict["fix type"] = GPSConnector._fix_type[line_data[6]]
                 data_dict["num_satellites"] = line_data[7]
             except KeyError:
-                print("Error decoding fix type from GGA data")
+                logger.warning("Error decoding fix type from GGA data")
 
         return data_dict
 
@@ -182,11 +182,11 @@ class GPS_connector:
         data_dict = {}
         if line_data[0] == "$GPRMC":
             data_dict["time"] = line_data[1]
-            data_dict["status"] = GPS_connector._status[line_data[2]]
-            data_dict["latitude"] = GPS_connector.get_latitude_degrees(
+            data_dict["status"] = GPSConnector._status[line_data[2]]
+            data_dict["latitude"] = GPSConnector.get_latitude_degrees(
                 line_data[3], line_data[4]
             )
-            data_dict["longitude"] = GPS_connector.get_longitude_degrees(
+            data_dict["longitude"] = GPSConnector.get_longitude_degrees(
                 line_data[5], line_data[6]
             )
             data_dict["speed"] = line_data[7]
@@ -203,7 +203,7 @@ class GPS_connector:
         Return:
             (float) : Latitude in degress
         """
-        latitude = GPS_connector._latitude_sn[direction_sn] * (
+        latitude = GPSConnector._latitude_sn[direction_sn] * (
             int(latitudeDDMM_MMMM[0:2]) + float(latitudeDDMM_MMMM[2:]) * 100 / 60 * 0.01
         )
         return latitude
@@ -218,7 +218,7 @@ class GPS_connector:
         Return:
             (float) : Longitude in degress
         """
-        longitude = GPS_connector._longitude_we[direction_we] * (
+        longitude = GPSConnector._longitude_we[direction_we] * (
             int(longitudeDDDMM_MMMM[0:3])
             + float(longitudeDDDMM_MMMM[3:]) * 100 / 60 * 0.01
         )

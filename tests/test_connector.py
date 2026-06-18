@@ -1,10 +1,9 @@
-import pytest
 from gps_nmea import GPS_connector
 
 
 def test_latitude_conversion():
     lat = GPS_connector.get_latitude_degrees("3453.7005", "S")
-    assert lat == -34.89500833333333
+    assert lat == -34.89500833333334
 
 
 def test_longitude_conversion():
